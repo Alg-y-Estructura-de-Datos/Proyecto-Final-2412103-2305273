@@ -1,11 +1,11 @@
-#include <vector>      // Para usar vectores dinámicos (vector<Venta>)
-#include <string>      // Para usar strings (texto)
+#include <vector>     
+#include <string>      
 #include <fstream>     // Para abrir y leer archivos
-#include <sstream>     // Para separar texto por partes (split por coma)
-#include <iostream>    // Para mostrar mensajes por consola
-#include "Venta.h"     // Incluye la definición del struct Venta
+#include <sstream>     // Para separar texto por partes (por coma)
+#include <iostream>   
+#include "Venta.h"    
 
-using namespace std;   // Nos permite escribir vector, string, etc. sin std::
+using namespace std;   
 
 // Función que lee el archivo CSV y devuelve un vector con todas las ventas cargadas
 vector<Venta> leerVentasDesdeCSV(const string& nombreArchivo) {
