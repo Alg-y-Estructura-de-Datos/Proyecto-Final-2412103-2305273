@@ -1,12 +1,12 @@
-#include <iostream>      // Para imprimir por pantalla (cout)
-#include <vector>        // Para usar vector<Venta>
-#include <string>        // Para trabajar con texto (string)
+#include <iostream>      
+#include <vector>         
+#include <string>        
 #include <limits>        // Para obtener el valor mínimo y máximo de un tipo
 
 #include "Venta.h"       // Archivo donde definimos el struct Venta
-#include "HashMapList.h" // Estructura hash con listas, provista por tus profes
+#include "HashMapList.h" // Estructura hash con listas
 
-using namespace std;     // Para no escribir std:: en cada línea
+using namespace std;     
 
 // Función auxiliar para crear una clave del tipo "Perú-Lima"
 string clavePaisCiudad(const string& pais, const string& ciudad) {
