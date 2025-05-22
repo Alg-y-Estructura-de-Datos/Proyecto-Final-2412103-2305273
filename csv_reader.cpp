@@ -40,7 +40,7 @@ vector<Venta> leerVentasDesdeCSV(const string& nombreArchivo) {
 
         // Creamos un objeto Venta y cargamos sus atributos desde los campos del CSV
         Venta v;
-        v.id = stoi(campos[0]);              // Convertimos el ID a entero
+        v.id = stoi(campos[0]);              // Convertimos el ID a entero   Convierte un string (texto) a un número entero (int).
         v.fecha = campos[1];                 // Fecha en formato texto
         v.pais = campos[2];                  // País
         v.ciudad = campos[3];                // Ciudad
@@ -48,7 +48,7 @@ vector<Venta> leerVentasDesdeCSV(const string& nombreArchivo) {
         v.producto = campos[5];              // Producto vendido
         v.categoria = campos[6];             // Categoría del producto
         v.cantidad = stoi(campos[7]);        // Cantidad vendida (entero)
-        v.precioUnitario = stod(campos[8]);  // Precio por unidad (double)
+        v.precioUnitario = stod(campos[8]);  // Precio por unidad (double) Convierte un string (texto) a un número dounble (double).
         v.montoTotal = stod(campos[9]);      // Monto total (double)
         v.medioEnvio = campos[10];           // Medio de envío
         v.estadoEnvio = campos[11];          // Estado del envío
