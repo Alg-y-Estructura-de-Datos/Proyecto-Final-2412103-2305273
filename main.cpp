@@ -5,7 +5,7 @@
 
 #include "Venta.h"             // Struct con los datos de cada venta
 #include "HashMapList.h"       // Estructura de HashMap provista por la cátedra
-#include "ProcesadorEstadisticas.cpp"  // Funciones estadísticas
+#include "procesarEstadisticas.cpp"  // Funciones estadísticas
 #include "CSVReader.cpp"       // Función leerVentasDesdeCSV
 using namespace std;           
 
