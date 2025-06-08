@@ -1,3 +1,6 @@
+// Archivo: Venta.h
+// Descripción: Este archivo forma parte del sistema de análisis de ventas y contiene definiciones relevantes para su funcionamiento.
+
 #ifndef VENTA_H  // Si no se ha definido VENTA_H, entonces...
 #define VENTA_H  // ...lo definimos. Esto evita incluir el archivo dos veces.
 
