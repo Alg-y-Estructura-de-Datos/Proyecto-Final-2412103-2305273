@@ -1,125 +1,133 @@
-#include <iostream>        // Para usar cout, cin, endl
-#include <vector>          // Para usar vector<Venta> y almacenar las ventas
-#include <string>          // Para trabajar con texto
-#include <limits>          // Para obtener el mínimo y máximo valor numérico
-#include <algorithm>       // Para ordenar estructuras con sort()
-#include <map>             // Para agrupar ciudades por país temporalmente
-#include "Venta.h"         // Incluye la estructura Venta definida por el usuario
-#include "HashMapList.h"   // HashMap con listas enlazadas provisto por la cátedra
+// TOTAL en procesarEstadisticas.cpp:
+// IF explícitos: 6
+// IF de estructuras complejas (HashMap, AVL, Lista, etc): 16
+// TOTAL ESTIMADO DE IFs: 22
 
-using namespace std;       // Evita el uso de std:: en cada línea
+// Archivo: procesarEstadisticas.cpp
+// Descripción: Este archivo forma parte del sistema de análisis de ventas y contiene definiciones relevantes para su funcionamiento.
 
-// Función que genera una clave combinada "Pais-Ciudad"
+#include <iostream>
+#include <vector>
+#include <string>
+#include <limits> //Incluye utilidades relacionadas con los límites de los tipos de datos numéricos, como std::numeric_limits<int>::max(), que da el valor máximo posible para un int.
+#include <algorithm>//Incluye funciones algorítmicas estándar, como sort(), max_element(), find(), etc. Se usan para manipular contenedores (como vectores).
+#include <map>// Incluye la clase std::map, que es una estructura de datos tipo diccionario (clave-valor) ordenada automáticamente por clave.
+#include "Venta.h"
+#include "HashMapList.h"
+
+using namespace std;
+
+// ================= FUNCIONES AUXILIARES =================
+
+// Esta función recibe dos cadenas por referencia constante: pais y ciudad.
 string clavePaisCiudad(const string& pais, const string& ciudad) {
-    return pais + "-" + ciudad;
+    return pais + "-" + ciudad; 
 }
 
-// Función que genera una clave combinada "Producto-Pais"
+// Similar a la anterior, esta función crea una clave única a partir del nombre de un producto y un país
 string claveProductoPais(const string& producto, const string& pais) {
     return producto + "-" + pais;
 }
 
-// Función que genera una clave combinada "Categoria-Pais"
+// Normaliza categoría-pais eliminando espacios y creando una clave única
 string claveCategoriaPais(const string& categoria, const string& pais) {
-    return categoria + "-" + pais;
+    string clave = categoria + "-" + pais;
+    clave.erase(remove(clave.begin(), clave.end(), ' '), clave.end()); //Usa el patrón erase-remove para borrar todos los ' ' (espacios) del string clave.
+    return clave;
 }
 
-// Función que devuelve directamente la categoría como clave
+// Devuelve solo la categoría como clave simple
 string claveCategoria(const string& categoria) {
     return categoria;
 }
 
-// Procesa las estadísticas iniciales cargando todos los datos en sus respectivos HashMapList
-void procesarEstadisticas(
-    const vector<Venta>& ventas,                             // Vector con todas las ventas
-    HashMapList<string, double>& ventasPorCiudad,            // Monto total por ciudad y país
-    HashMapList<string, double>& ventasPorProductoPais,      // Monto total por producto y país
-    HashMapList<string, pair<double, int>>& acumuladorCategoriaPais, // Monto y cantidad por categoría
-    HashMapList<string, int>& enviosPorPais,                 // Cantidad de envíos por país
-    HashMapList<string, int>& enviosPorCategoria,            // Cantidad de envíos por categoría
-    HashMapList<string, double>& ventasPorFecha,             // Monto total vendido por fecha
-    HashMapList<string, int>& estadosEnvioPorPais,           // Estados de envío por país
-    HashMapList<string, int>& cantidadVendidaPorProducto     // Cantidad total de productos vendidos
-) {
-    for (const Venta& v : ventas) { // Recorremos cada venta
-
-        // Sumamos el monto total por ciudad
-        string ciudadKey = clavePaisCiudad(v.pais, v.ciudad);
-        ventasPorCiudad.put(ciudadKey, ventasPorCiudad.get(ciudadKey) + v.montoTotal);
-
-        // Sumamos el monto por producto y país
-        string prodPaisKey = claveProductoPais(v.producto, v.pais);
-        ventasPorProductoPais.put(prodPaisKey, ventasPorProductoPais.get(prodPaisKey) + v.montoTotal);
-
-        // Acumulamos monto y cantidad para calcular promedio de categoría
-        string catPaisKey = claveCategoriaPais(v.categoria, v.pais);
-        pair<double, int> actual = acumuladorCategoriaPais.get(catPaisKey);
-        actual.first += v.montoTotal; // monto total acumulado
-        actual.second += 1;           // cantidad de ventas
-        acumuladorCategoriaPais.put(catPaisKey, actual); // actualizamos
-
-        // Contamos el medio de envío más usado por país
-        string envioPaisKey = clavePaisCiudad(v.pais, v.medioEnvio);
-        enviosPorPais.put(envioPaisKey, enviosPorPais.get(envioPaisKey) + 1);
-
-        // Contamos el medio de envío por categoría
-        string envioCatKey = claveCategoria(v.categoria + "-" + v.medioEnvio);
-        enviosPorCategoria.put(envioCatKey, enviosPorCategoria.get(envioCatKey) + 1);
-
-        // Sumamos ventas por fecha
-        ventasPorFecha.put(v.fecha, ventasPorFecha.get(v.fecha) + v.montoTotal);
-
-        // Contamos estados de envío por país
-        string estadoPaisKey = clavePaisCiudad(v.pais, v.estadoEnvio);
-        estadosEnvioPorPais.put(estadoPaisKey, estadosEnvioPorPais.get(estadoPaisKey) + 1);
-
-        // Sumamos unidades vendidas por producto
-        cantidadVendidaPorProducto.put(v.producto, cantidadVendidaPorProducto.get(v.producto) + v.cantidad);
+// Función segura para obtener claves que aún no existen
+template <typename K, typename T>
+T getSeguro(HashMapList<K, T>& mapa, K clave, T valorPorDefecto) {
+    try {
+        return mapa.get(clave);
+    } catch (...) {
+        return valorPorDefecto;
     }
 }
-// Muestra el producto con más y menos unidades vendidas
+
+// ================= PROCESAMIENTO PRINCIPAL =================
+
+// Procesamiento principal de estadísticas, creamos hashmaps
+void procesarEstadisticas(
+    const vector<Venta>& ventas,
+    HashMapList<string, double>& ventasPorCiudad,
+    HashMapList<string, double>& ventasPorProductoPais,
+    HashMapList<string, pair<double, int>>& acumuladorCategoriaPais,
+    HashMapList<string, int>& enviosPorPais,
+    HashMapList<string, int>& enviosPorCategoria,
+    HashMapList<string, double>& ventasPorFecha,
+    HashMapList<string, int>& estadosEnvioPorPais,
+    HashMapList<string, int>& cantidadVendidaPorProducto
+) {
+    for (const Venta& v : ventas) { // Creamos claves para cada ""CATEGORIA"" que nos va a servir para mas adelante
+        string ciudadKey = clavePaisCiudad(v.pais, v.ciudad);
+        string prodPaisKey = claveProductoPais(v.producto, v.pais);
+        string catPaisKey = claveCategoriaPais(v.categoria, v.pais);
+        string envioPaisKey = clavePaisCiudad(v.pais, v.medioEnvio);
+        string envioCatKey = v.categoria + "-" + v.medioEnvio;
+        string estadoPaisKey = clavePaisCiudad(v.pais, v.estadoEnvio);
+
+        ventasPorCiudad.put(ciudadKey, getSeguro(ventasPorCiudad, ciudadKey, 0.0) + v.montoTotal);//Acumulación de estadísticas
+        ventasPorProductoPais.put(prodPaisKey, getSeguro(ventasPorProductoPais, prodPaisKey, 0.0) + v.montoTotal);
+
+        pair<double, int> actual = getSeguro(acumuladorCategoriaPais, catPaisKey, {0.0, 0}); 
+        actual.first += v.montoTotal;
+        actual.second += 1;
+        acumuladorCategoriaPais.put(catPaisKey, actual);
+
+        enviosPorPais.put(envioPaisKey, getSeguro(enviosPorPais, envioPaisKey, 0) + 1);
+        enviosPorCategoria.put(envioCatKey, getSeguro(enviosPorCategoria, envioCatKey, 0) + 1);
+        ventasPorFecha.put(v.fecha, getSeguro(ventasPorFecha, v.fecha, 0.0) + v.montoTotal);
+        estadosEnvioPorPais.put(estadoPaisKey, getSeguro(estadosEnvioPorPais, estadoPaisKey, 0) + 1);
+        cantidadVendidaPorProducto.put(v.producto, getSeguro(cantidadVendidaPorProducto, v.producto, 0) + v.cantidad);
+    }
+}
+
+// ================= FUNCIONES DE ANÁLISIS Y REPORTE =================
+
+// Producto más y menos vendido
 void mostrarProductoMasYMenosVendido(HashMapList<string, int>& cantidades) {
-    int maxCant = numeric_limits<int>::min();   // Inicializamos el máximo con el valor más bajo posible
-    int minCant = numeric_limits<int>::max();   // Inicializamos el mínimo con el valor más alto posible
-    string productoMax, productoMin;            // Variables para guardar los nombres de los productos
+    int maxCant = numeric_limits<int>::min(); // Inicializa al valor más bajo
+    int minCant = numeric_limits<int>::max(); // Inicializa al valor más alto
+    string productoMax, productoMin;
 
-    // Recorremos cada bucket del HashMapList
-    for (int i = 0; i < cantidades.capacidad(); i++) {
-        Lista<HashEntry<string, int>>* lista = cantidades.getBucket(i); // Obtenemos la lista de ese bucket
+    // Recorre todos los buckets del hashmap
+    for (int i = 0; i < cantidades.getCapacidad(); i++) {
+        auto lista = cantidades.getBucket(i);
         for (int j = 0; j < lista->getTamanio(); j++) {
-            HashEntry<string, int> entry = lista->getDato(j); // Accedemos a la entrada clave-valor
-
-            // Verificamos si es el nuevo máximo
-            if (entry.getValor() > maxCant) {
-                maxCant = entry.getValor();
+            auto entry = lista->getDato(j);
+            int valor = entry.getValor();
+            if (valor > maxCant) {
+                maxCant = valor;
                 productoMax = entry.getClave();
             }
-
-            // Verificamos si es el nuevo mínimo
-            if (entry.getValor() < minCant) {
-                minCant = entry.getValor();
+            if (valor < minCant) {
+                minCant = valor;
                 productoMin = entry.getClave();
             }
         }
     }
 
-    // Mostramos los resultados por pantalla
-    cout << "Producto más vendido: " << productoMax << " (" << maxCant << " unidades)" << endl;
+    cout << "Producto mas vendido: " << productoMax << " (" << maxCant << " unidades)" << endl;
     cout << "Producto menos vendido: " << productoMin << " (" << minCant << " unidades)" << endl;
 }
 
-// Muestra el día con el mayor monto de ventas
+// Día con mayor monto vendido
 void mostrarDiaConMayorVenta(HashMapList<string, double>& ventasPorFecha) {
-    double maxVenta = -1;           // Inicializamos con un valor negativo
-    string mejorDia;                // Guardará la fecha con más ventas
+    double maxVenta = -1;
+    string mejorDia;
 
-    // Recorremos los buckets del HashMapList
-    for (int i = 0; i < ventasPorFecha.capacidad(); i++) {
-        Lista<HashEntry<string, double>>* lista = ventasPorFecha.getBucket(i); // Lista del bucket
+    // Busca el día con el monto más alto
+    for (int i = 0; i < ventasPorFecha.getCapacidad(); i++) {
+        auto lista = ventasPorFecha.getBucket(i);
         for (int j = 0; j < lista->getTamanio(); j++) {
-            HashEntry<string, double> entry = lista->getDato(j); // Obtenemos clave-valor
-
-            // Comparamos y actualizamos si encontramos un monto mayor
+            auto entry = lista->getDato(j);
             if (entry.getValor() > maxVenta) {
                 maxVenta = entry.getValor();
                 mejorDia = entry.getClave();
@@ -127,124 +135,123 @@ void mostrarDiaConMayorVenta(HashMapList<string, double>& ventasPorFecha) {
         }
     }
 
-    // Mostramos el día con mayor venta
-    cout << "Día con mayor monto de ventas: " << mejorDia << " ($" << maxVenta << ")" << endl;
+    cout << "Dia con mayor monto de ventas: " << mejorDia << " ($" << maxVenta << ")" << endl;
 }
 
-// Muestra los promedios de ventas por categoría y país
+// Promedios por categoría y país
 void mostrarPromedioVentasPorCategoriaYPais(HashMapList<string, pair<double, int>>& acumulador) {
-    cout << "Promedios de ventas por categoría y país:" << endl;
+    map<string, pair<double, int>> promedios; // mapa auxiliar
 
-    // Recorremos el HashMapList
-    for (int i = 0; i < acumulador.capacidad(); i++) {
-        Lista<HashEntry<string, pair<double, int>>>* lista = acumulador.getBucket(i); // Obtenemos lista del bucket
-
+    // Recorre todo el hash y acumula montos y cantidades
+    for (int i = 0; i < acumulador.getCapacidad(); i++) {
+        auto lista = acumulador.getBucket(i);
         for (int j = 0; j < lista->getTamanio(); j++) {
-            HashEntry<string, pair<double, int>> entry = lista->getDato(j); // Clave y par (suma, cantidad)
+            auto entry = lista->getDato(j);
+            string clave = entry.getClave();
             double total = entry.getValor().first;
             int cantidad = entry.getValor().second;
-
             if (cantidad > 0) {
-                double promedio = total / cantidad; // Calculamos promedio
-                cout << " - " << entry.getClave() << ": $" << promedio << endl;
+                promedios[clave].first += total;
+                promedios[clave].second += cantidad;
             }
         }
     }
+
+    // Muestra una línea por cada categoría-país
+    cout << "Promedios de ventas por categoria y pais:" << endl;
+    for (const auto& par : promedios) {
+        string clave = par.first;
+        double total = par.second.first;
+        int cantidad = par.second.second;
+
+        size_t separador = clave.find('-'); // separa categoría y país
+        string categoria = clave.substr(0, separador);
+        string pais = clave.substr(separador + 1);
+
+        double promedio = total / cantidad;
+        cout << " - " << categoria << " en " << pais << ": $" << promedio << endl;
+    }
 }
 
-// Muestra las 5 ciudades con mayor monto de ventas por país
+// Top 5 ciudades por país
 void mostrarTop5CiudadesPorPais(HashMapList<string, double>& ventasPorCiudad) {
-    map<string, vector<pair<string, double>>> porPais; // Agrupa ciudades por país
+    map<string, vector<pair<string, double>>> porPais;
 
-    // Recorremos el HashMapList
-    for (int i = 0; i < ventasPorCiudad.capacidad(); i++) {
-        Lista<HashEntry<string, double>>* lista = ventasPorCiudad.getBucket(i);
-
+    // Separa ciudad y país, y agrupa ventas
+    for (int i = 0; i < ventasPorCiudad.getCapacidad(); i++) {
+        auto lista = ventasPorCiudad.getBucket(i);
         for (int j = 0; j < lista->getTamanio(); j++) {
-            HashEntry<string, double> entry = lista->getDato(j);
-            string clave = entry.getClave(); // Ej: "Argentina-Córdoba"
+            auto entry = lista->getDato(j);
+            string clave = entry.getClave();
             double monto = entry.getValor();
-
-            size_t guion = clave.find('-');                      // Buscamos el guión separador
-            string pais = clave.substr(0, guion);                // Extraemos el país
-            string ciudad = clave.substr(guion + 1);             // Extraemos la ciudad
-
-            porPais[pais].push_back(make_pair(ciudad, monto));   // Guardamos la ciudad y su monto
+            size_t guion = clave.find('-');
+            string pais = clave.substr(0, guion);
+            string ciudad = clave.substr(guion + 1);
+            porPais[pais].push_back({ ciudad, monto });
         }
     }
 
-    // Mostramos el top 5 de cada país
+    // Ordena y muestra las 5 ciudades con más ventas por país
     for (auto& par : porPais) {
-        string pais = par.first;
-        vector<pair<string, double>>& ciudades = par.second;
-
-        // Ordenamos de mayor a menor por monto
+        cout << "Top 5 ciudades de " << par.first << ":" << endl;
+        auto& ciudades = par.second;
         sort(ciudades.begin(), ciudades.end(), [](auto& a, auto& b) {
             return a.second > b.second;
         });
 
-        cout << "Top 5 ciudades de " << pais << ":" << endl;
-
-        // Mostramos máximo 5 ciudades
         for (int i = 0; i < min(5, (int)ciudades.size()); i++) {
             cout << " - " << ciudades[i].first << ": $" << ciudades[i].second << endl;
         }
     }
 }
 
-// Muestra el medio de envío más utilizado por cada país
+// Medio de envío más usado por país
 void mostrarMedioEnvioMasUsadoPorPais(HashMapList<string, int>& enviosPorPais) {
-    map<string, pair<string, int>> maximos; // país → (envío, cantidad)
+    map<string, pair<string, int>> maximos;
 
-    for (int i = 0; i < enviosPorPais.capacidad(); i++) {
-        Lista<HashEntry<string, int>>* lista = enviosPorPais.getBucket(i);
-
+    // Encuentra el medio de envío más frecuente por país
+    for (int i = 0; i < enviosPorPais.getCapacidad(); i++) {
+        auto lista = enviosPorPais.getBucket(i);
         for (int j = 0; j < lista->getTamanio(); j++) {
-            HashEntry<string, int> entry = lista->getDato(j);
-            string clave = entry.getClave();     // Ej: "Argentina-Estándar"
+            auto entry = lista->getDato(j);
+            string clave = entry.getClave();
             int cantidad = entry.getValor();
-
             size_t guion = clave.find('-');
-            string pais = clave.substr(0, guion);     // Extraemos país
-            string envio = clave.substr(guion + 1);   // Extraemos tipo de envío
-
+            string pais = clave.substr(0, guion);
+            string envio = clave.substr(guion + 1);
             if (cantidad > maximos[pais].second) {
-                maximos[pais] = make_pair(envio, cantidad); // Guardamos el más usado
+                maximos[pais] = { envio, cantidad };
             }
         }
     }
 
-    // Mostramos los resultados
-    cout << "Medio de envío más usado por país:" << endl;
+    cout << "Medio de envio mas usado por pais:" << endl;
     for (auto& par : maximos) {
-        cout << " - " << par.first << ": " << par.second.first << " (" << par.second.second << " envíos)" << endl;
+        cout << " - " << par.first << ": " << par.second.first << " (" << par.second.second << " envios)" << endl;
     }
 }
 
-// Muestra el estado de envío más frecuente por país
+// Estado de envío más frecuente por país
 void mostrarEstadoEnvioMasFrecuentePorPais(HashMapList<string, int>& estadosPorPais) {
-    map<string, pair<string, int>> maximos; // país → (estado, cantidad)
+    map<string, pair<string, int>> maximos;
 
-    for (int i = 0; i < estadosPorPais.capacidad(); i++) {
-        Lista<HashEntry<string, int>>* lista = estadosPorPais.getBucket(i);
-
+    // Encuentra el estado más frecuente por país (ej: "Entregado", "Pendiente")
+    for (int i = 0; i < estadosPorPais.getCapacidad(); i++) {
+        auto lista = estadosPorPais.getBucket(i);
         for (int j = 0; j < lista->getTamanio(); j++) {
-            HashEntry<string, int> entry = lista->getDato(j);
-            string clave = entry.getClave();    // Ej: "Chile-Entregado"
+            auto entry = lista->getDato(j);
+            string clave = entry.getClave();
             int cantidad = entry.getValor();
-
             size_t guion = clave.find('-');
-            string pais = clave.substr(0, guion);     // País
-            string estado = clave.substr(guion + 1);  // Estado
-
+            string pais = clave.substr(0, guion);
+            string estado = clave.substr(guion + 1);
             if (cantidad > maximos[pais].second) {
-                maximos[pais] = make_pair(estado, cantidad); // Guardamos el estado más frecuente
+                maximos[pais] = { estado, cantidad };
             }
         }
     }
 
-    // Mostramos resultado por país
-    cout << "Estado de envío más frecuente por país:" << endl;
+    cout << "Estado de envio más frecuente por pais:" << endl;
     for (auto& par : maximos) {
         cout << " - " << par.first << ": " << par.second.first << " (" << par.second.second << " veces)" << endl;
     }
