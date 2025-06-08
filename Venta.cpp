@@ -1,3 +1,6 @@
+// Archivo: Venta.cpp
+// Descripción: Este archivo forma parte del sistema de análisis de ventas y contiene definiciones relevantes para su funcionamiento.
+
 #include "Venta.h"  // Incluimos la definición de Venta
 
 // Función que recibe una venta y arma un string con sus datos principales
@@ -10,7 +13,7 @@ string ventaToString(const Venta& v) {
            " = $" + to_string(v.montoTotal) +               // Total de la venta
            " | Cliente: " + v.cliente +                     // Nombre del cliente
            " | Ciudad: " + v.ciudad + ", " + v.pais +       // Ciudad y país
-           " | Envío: " + v.medioEnvio +                    // Medio de envío
+           " | Envio: " + v.medioEnvio +                    // Medio de envío
            " [" + v.estadoEnvio + "]";                      // Estado del envío
 }
 
