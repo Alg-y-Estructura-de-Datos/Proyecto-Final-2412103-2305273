@@ -1,62 +1,73 @@
-#include <vector>     
-#include <string>      
-#include <fstream>     // Para abrir y leer archivos
-#include <sstream>     // Para separar texto por partes (por coma)
-#include <iostream>   
-#include "Venta.h"    
+// TOTAL en csv_reader.cpp:
+// IF explícitos: 2
+// IF de estructuras complejas (HashMap, AVL, Lista, etc): 0
+// TOTAL ESTIMADO DE IFs: 2
 
-using namespace std;   
+// Archivo: csv_reader.cpp
+// Descripción: Este archivo forma parte del sistema de análisis de ventas y contiene definiciones relevantes para su funcionamiento.
 
-// Función que lee el archivo CSV y devuelve un vector con todas las ventas cargadas
+#include <fstream>     // Para manejo de archivos
+#include <sstream>     // Para procesar líneas y separar campos
+#include <vector>      // Para almacenar las ventas
+#include <string>      // Para manipular texto
+#include "Venta.h"     // Estructura de datos que representa una venta
+
+using namespace std;
+
+// ======================= LIMPIEZA DE ESPACIOS =======================
+
+// Función para limpiar espacios en blanco al inicio y final de un string
+string limpiarEspacios(const string& str) {
+    size_t inicio = str.find_first_not_of(" \t\r\n"); // Encuentra primer carácter no espacio
+    size_t fin = str.find_last_not_of(" \t\r\n");     // Encuentra último carácter no espacio
+    return (inicio == string::npos) ? "" : str.substr(inicio, fin - inicio + 1); // Si es todo espacio, devuelve vacío
+}
+
+// ======================= LECTURA DE ARCHIVO CSV =======================
+
+// Función para leer el CSV
 vector<Venta> leerVentasDesdeCSV(const string& nombreArchivo) {
-    vector<Venta> ventas;               // Creamos un vector vacío para guardar las ventas
-    ifstream archivo(nombreArchivo);    // Abrimos el archivo con el nombre recibido
+    vector<Venta> ventas;              // Vector que almacenará las ventas leídas
+    ifstream archivo(nombreArchivo);   // Abre archivo CSV en modo lectura
 
-    // Si el archivo no se puede abrir, mostramos un mensaje de error
     if (!archivo.is_open()) {
-        cerr << "Error al abrir el archivo: " << nombreArchivo << endl;
-        return ventas;  // Devolvemos un vector vacío
+        throw -1; // Error al abrir archivo
     }
 
     string linea;
-    getline(archivo, linea);  // Leemos la primera línea (los títulos de columna) y la descartamos
+    getline(archivo, linea); // Saltar encabezado (primera línea del CSV)
 
-    // Leemos línea por línea hasta llegar al final del archivo
+    // Leer cada línea restante del archivo
     while (getline(archivo, linea)) {
-        stringstream ss(linea);     // Creamos un stream con la línea completa
-        string campo;               // Para guardar cada valor separado por coma
-        vector<string> campos;      // Vector temporal para guardar los 12 campos
+        stringstream ss(linea);  // Convierte línea a flujo de texto
+        string campo;
+        vector<string> campos;   // Vector para almacenar los valores de cada campo
 
-        // Separamos la línea por comas y guardamos cada parte en el vector campos
+        // Separar cada campo usando ',' como delimitador
         while (getline(ss, campo, ',')) {
             campos.push_back(campo);
         }
 
-        // Verificamos que la línea tenga exactamente 12 campos
-        if (campos.size() != 12) {
-            cerr << "Línea inválida con " << campos.size() << " campos" << endl;
-            continue;  // Saltamos esta línea si está incompleta o mal
-        }
+        if (campos.size() < 12) continue; // Asegurarse que haya suficientes campos (evita errores)
 
-        // Creamos un objeto Venta y cargamos sus atributos desde los campos del CSV
+        // Crear una venta a partir de los campos procesados
         Venta v;
-        v.id = stoi(campos[0]);              // Convertimos el ID a entero   Convierte un string (texto) a un número entero (int).
-        v.fecha = campos[1];                 // Fecha en formato texto
-        v.pais = campos[2];                  // País
-        v.ciudad = campos[3];                // Ciudad
-        v.cliente = campos[4];               // Nombre del cliente
-        v.producto = campos[5];              // Producto vendido
-        v.categoria = campos[6];             // Categoría del producto
-        v.cantidad = stoi(campos[7]);        // Cantidad vendida (entero)
-        v.precioUnitario = stod(campos[8]);  // Precio por unidad (double) Convierte un string (texto) a un número dounble (double).
-        v.montoTotal = stod(campos[9]);      // Monto total (double)
-        v.medioEnvio = campos[10];           // Medio de envío
-        v.estadoEnvio = campos[11];          // Estado del envío
+        v.id = stoi(campos[0]);
+        v.fecha = limpiarEspacios(campos[1]);
+        v.pais = limpiarEspacios(campos[2]);
+        v.ciudad = limpiarEspacios(campos[3]);
+        v.cliente = limpiarEspacios(campos[4]);
+        v.producto = limpiarEspacios(campos[5]);
+        v.categoria = limpiarEspacios(campos[6]);
+        v.cantidad = stoi(campos[7]);
+        v.precioUnitario = stod(campos[8]);
+        v.montoTotal = stod(campos[9]);
+        v.medioEnvio = limpiarEspacios(campos[10]);
+        v.estadoEnvio = limpiarEspacios(campos[11]);
 
-        ventas.push_back(v);  // Agregamos la venta al vector
+        ventas.push_back(v); // Agrega la venta al vector
     }
 
-    archivo.close();  // Cerramos el archivo cuando terminamos
-    return ventas;    // Devolvemos el vector con todas las ventas cargadas
+    archivo.close(); // Cierra el archivo al finalizar
+    return ventas;   // Devuelve todas las ventas leídas
 }
-
